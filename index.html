@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+<title>カヌレバトン｜カヌレ店オープン コンサルティング進行表・売上管理</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#faf6f0; --card:#ffffff; --ink:#3a2e25; --sub:#8a7a6a;
+    --accent:#b9783f; --accent-d:#9a5f2c; --line:#ece2d6; --gold:#d9a64a;
+    --ok:#3f9d6b; --warn:#d98a3a; --bad:#c45b4e; --soft:#f4eade;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.6;}
+  header{background:linear-gradient(135deg,#b9783f,#9a5f2c);color:#fff;padding:22px 20px 16px;}
+  header h1{margin:0;font-size:22px;letter-spacing:.04em;}
+  header p{margin:4px 0 0;font-size:13px;opacity:.92;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 16px 60px;}
+  nav{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);
+    display:flex;gap:4px;overflow-x:auto;padding:6px 8px;}
+  nav button{flex:0 0 auto;border:0;background:transparent;color:var(--sub);font-size:13px;
+    padding:9px 13px;border-radius:8px;cursor:pointer;font-weight:600;white-space:nowrap;}
+  nav button.active{background:var(--accent);color:#fff;}
+  section{display:none;margin-top:18px;}
+  section.active{display:block;animation:fade .25s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;
+    box-shadow:0 1px 2px rgba(0,0,0,.03);}
+  h2{font-size:18px;margin:0 0 4px;}
+  h2 .em{color:var(--accent);}
+  .lead{color:var(--sub);font-size:13px;margin:0 0 14px;}
+  h3{font-size:15px;margin:18px 0 8px;border-left:4px solid var(--gold);padding-left:8px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{border:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:middle;}
+  th{background:#f6efe6;color:var(--accent-d);font-weight:700;font-size:12px;}
+  td.num,th.num{text-align:right;}
+  input,select,textarea{font:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 7px;
+    background:#fffdfa;color:var(--ink);width:100%;}
+  input[type=number]{text-align:right;}
+  input[type=checkbox]{width:18px;height:18px;accent-color:var(--accent);}
+  .btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 14px;font-size:13px;
+    font-weight:600;cursor:pointer;}
+  .btn.ghost{background:#fff;color:var(--accent);border:1px solid var(--accent);}
+  .btn.sm{padding:5px 10px;font-size:12px;}
+  .btn.del{background:#fff;color:var(--bad);border:1px solid var(--line);}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:6px;}
+  .kpi{background:linear-gradient(135deg,#fff,#fbf4ea);border:1px solid var(--line);border-radius:12px;padding:14px;}
+  .kpi .l{font-size:12px;color:var(--sub);}
+  .kpi .v{font-size:22px;font-weight:800;color:var(--accent-d);margin-top:2px;}
+  .kpi .s{font-size:11px;color:var(--sub);}
+  .pill{display:inline-block;font-size:11px;padding:2px 9px;border-radius:999px;font-weight:700;}
+  .pill.todo{background:#fdeee2;color:var(--warn);}
+  .pill.doing{background:#e6f0fb;color:#3a6ea8;}
+  .pill.done{background:#e4f3ea;color:var(--ok);}
+  .phase{font-weight:700;color:var(--accent-d);}
+  .bar{height:10px;border-radius:6px;background:#eee;overflow:hidden;margin-top:6px;}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--accent));}
+  .note{background:#fbf4ea;border:1px dashed var(--gold);border-radius:10px;padding:12px;font-size:13px;}
+  .check-list label{display:flex;gap:10px;align-items:flex-start;padding:9px 6px;border-bottom:1px solid var(--line);font-size:13px;}
+  .check-list label:last-child{border:0;}
+  .check-list .done-txt{text-decoration:line-through;color:var(--sub);}
+  .small{font-size:12px;color:var(--sub);}
+  .tag{font-size:11px;background:#f1e7d8;color:var(--accent-d);padding:1px 7px;border-radius:5px;margin-left:6px;}
+  .saveinfo{font-size:11px;color:var(--sub);text-align:right;margin-top:-8px;}
+  .gantt td{font-size:11px;text-align:center;padding:4px 2px;}
+  .gantt .g{background:linear-gradient(90deg,var(--gold),var(--accent));border-radius:4px;color:#fff;font-size:10px;}
+  .hrow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;max-width:1080px;margin:0 auto;}
+  .hstat{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:0 0 auto;}
+  .cstat{font-size:11px;font-weight:700;background:rgba(255,255,255,.18);padding:3px 10px;border-radius:999px;cursor:pointer;white-space:nowrap;}
+  .cstat.off{color:#ffe;} .cstat.on{background:#e4f3ea;color:#2f7d52;} .cstat.sync{background:#fff6e6;color:#a5701f;} .cstat.err{background:#fde7e3;color:#b23b2c;}
+  .hbtn{font-size:12px;background:#fff;color:var(--accent-d);border:0;border-radius:8px;padding:5px 10px;font-weight:700;cursor:pointer;}
+  .modal{display:none;position:fixed;inset:0;background:rgba(40,30,20,.45);z-index:50;padding:18px;overflow:auto;}
+  .modal.show{display:flex;align-items:flex-start;justify-content:center;}
+  .modal-box{background:#fff;border-radius:16px;padding:20px;max-width:520px;width:100%;margin-top:6vh;box-shadow:0 10px 40px rgba(0,0,0,.25);}
+  .flbl{display:block;font-size:12px;color:var(--sub);margin:10px 0 4px;font-weight:600;}
+  @media(max-width:640px){
+    .hidesm{display:none;}
+    header h1{font-size:19px;} header p{font-size:11px;}
+    .kpis{grid-template-columns:repeat(2,1fr);}
+    nav button{font-size:12px;padding:8px 10px;}
+    .card{padding:14px;}
+    input,select,textarea{font-size:16px;} /* iOS拡大防止 */
+  }
+  footer{text-align:center;color:var(--sub);font-size:11px;padding:20px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="hrow">
+    <div>
+      <h1>🥐 カヌレバトン</h1>
+      <p>カヌレ店オープン コンサルティング進行表・売上管理</p>
+    </div>
+    <div class="hstat">
+      <span id="cloud-status" class="cstat off" onclick="openSettings()">● オフライン</span>
+      <button class="hbtn" onclick="openSettings()">⚙ 接続設定</button>
+    </div>
+  </div>
+</header>
+<nav id="nav"></nav>
+
+<!-- 接続設定モーダル -->
+<div id="settings" class="modal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal-box">
+    <h2 style="margin-top:0">⚙ オンライン接続設定</h2>
+    <p class="small">Supabase（無料クラウドDB）に接続すると、PC・スマホ・オーナーと<b>同じデータをリアルタイム共有</b>できます。下に2つの値を貼り付けて「保存して接続」を押してください。値の取得手順は「セットアップ手順」をご覧ください。</p>
+    <label class="flbl">Project URL（例: https://xxxx.supabase.co）</label>
+    <input id="set-url" placeholder="https://xxxxxxxx.supabase.co">
+    <label class="flbl">anon public key（eyJ... で始まる長い文字列）</label>
+    <textarea id="set-key" rows="3" placeholder="eyJhbGciOi..."></textarea>
+    <label class="flbl">共有スペースID（任意・同じIDの人と共有）</label>
+    <input id="set-room" placeholder="canele-baton（既定）">
+    <div class="row" style="margin-top:12px;gap:8px">
+      <button class="btn" onclick="saveSettings()">保存して接続</button>
+      <button class="btn ghost sm" onclick="disconnectCloud()">切断（ローカルのみ）</button>
+      <button class="btn ghost sm" onclick="closeSettings()">閉じる</button>
+    </div>
+    <p id="set-msg" class="small" style="margin-top:10px"></p>
+    <p class="small" style="color:var(--sub)">anon keyは公開用キーです（管理者用のservice keyは絶対に貼らないでください）。データはあなたのSupabaseプロジェクトに保存されます。</p>
+  </div>
+</div>
+<div class="wrap">
+
+<!-- ===== 概要 ===== -->
+<section id="overview" class="active">
+  <div class="card">
+    <h2>📋 <span class="em">プロジェクト概要</span></h2>
+    <p class="lead">小規模テイクアウト中心のカヌレ店。成功率を高めるための工程・数値・タスクをこの1ファイルで管理します。</p>
+    <div class="kpis">
+      <div class="kpi"><div class="l">オープン目標</div><div class="v" id="kpi-open">8月上旬</div><div class="s">工事 6/15〜7/末</div></div>
+      <div class="kpi"><div class="l">総合進捗</div><div class="v" id="kpi-prog">0%</div><div class="s">工程＋ToDoを連動集計</div></div>
+      <div class="kpi"><div class="l">オーナーToDo残</div><div class="v" id="kpi-todo">0件</div><div class="s">未完了タスク</div></div>
+      <div class="kpi"><div class="l">想定客単価</div><div class="v" id="kpi-aov">¥0</div><div class="s">目標 ¥1,500（メニュー設計より）</div></div>
+    </div>
+    <div class="note" style="margin-top:14px">
+      <b>使い方：</b>上のタブで「進行表 / メニュー価格設計 / 売上管理 / オーナーToDo / 厨房機器」を切替えます。
+      入力した内容は<b>この端末のブラウザに自動保存</b>されます（消えません）。バックアップは右下の「データ書き出し」から。
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>成功への3つの柱</h3>
+    <table>
+      <tr><th style="width:34%">柱</th><th>ポイント</th></tr>
+      <tr><td class="phase">① 客単価¥1,500をキープするラインナップ構築・販促</td><td>単品売りに頼らず「カヌレ4個セット」「ドリンク＋カヌレ」「BOX商品」で単価を底上げ。グルテンフリーの付加価値で価格を取り、まとめ買い・手土産需要を喚起する販促を設計する。</td></tr>
+      <tr><td class="phase">② ギフトのパッケージ戦略</td><td>化粧箱・のし・メッセージカード対応で贈答・手土産市場を狙う。4/6/9個入りギフトBOX、季節限定詰合せ、「想いをつなぐバトン」のストーリーリーフレット同梱で単価と話題性を両立。</td></tr>
+      <tr><td class="phase">③ 法人・卸・EC営業</td><td>近隣カフェ・物販店への卸（代理販売）、企業の手土産・ノベルティ・福利厚生、マルシェ／催事出店、冷凍配送のEC（オンライン販売）で店舗外チャネルを構築。社会的ストーリーは法人のCSR・ESG文脈とも好相性。</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ===== 進行表 ===== -->
+<section id="schedule">
+  <div class="card">
+    <h2>🗓 <span class="em">進行表（工程・タスク）</span></h2>
+    <p class="lead">工事 6/15〜7/末を軸に工程を管理。開始/終了/状態を編集すると<b>下のガントチャートが自動で連動</b>します。ToDoを各工程にリンクすると進捗バッジにも反映されます。</p>
+    <div class="bar"><i id="prog-bar" style="width:0%"></i></div>
+    <p class="saveinfo" id="prog-label">完了 0 / 0</p>
+    <div style="overflow-x:auto">
+    <table style="min-width:680px">
+      <thead><tr><th style="width:15%">工程</th><th>タスク</th><th style="width:12%">開始</th><th style="width:12%">終了</th><th style="width:10%">期限</th><th style="width:12%">状態</th><th style="width:5%"></th></tr></thead>
+      <tbody id="sched-body"></tbody>
+    </table>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="btn sm" onclick="addSched()">＋ 行を追加</button></div>
+
+    <h3>ガントチャート（進行表と連動）</h3>
+    <div style="overflow-x:auto"><div id="gantt"></div></div>
+    <div class="note" style="margin-top:12px">
+      バーの色：<span style="color:var(--sub)">未着手</span>／<span style="color:var(--accent-d)">進行中（金〜茶）</span>／<span style="color:var(--ok)">完了（緑）</span>。各工程の<b>ToDo a/b</b>は、オーナーToDoでその工程にリンクした項目の達成状況です。
+    </div>
+  </div>
+</section>
+
+<!-- ===== メニュー ===== -->
+<section id="menu">
+  <div class="card">
+    <h2>🍮 <span class="em">メニュー / 価格設計</span></h2>
+    <p class="lead">価格・原価を入れると粗利・原価率を自動計算。原価率は30〜35%が目安（緑＝良好、赤＝要見直し）。</p>
+    <div class="kpis">
+      <div class="kpi"><div class="l">平均原価率</div><div class="v" id="m-rate">0%</div><div class="s">目標 30〜35%</div></div>
+      <div class="kpi"><div class="l">想定客単価</div><div class="v" id="m-aov">¥0</div><div class="s">主要3点平均×1.5想定</div></div>
+      <div class="kpi"><div class="l">商品数</div><div class="v" id="m-count">0</div><div class="s">カヌレの味を充実</div></div>
+    </div>
+    <table>
+      <thead><tr><th style="width:11%">分類</th><th>商品名</th><th class="num" style="width:12%">売価¥</th><th class="num" style="width:12%">原価¥</th><th class="num" style="width:11%">粗利¥</th><th class="num" style="width:12%">原価率</th><th style="width:6%"></th></tr></thead>
+      <tbody id="menu-body"></tbody>
+    </table>
+    <div class="row" style="margin-top:10px"><button class="btn sm" onclick="addMenu()">＋ 商品を追加</button></div>
+    <div class="note" style="margin-top:14px">
+      <b>カヌレは米粉＆おから・小麦粉/ラム酒不使用のグルテンフリー</b>が最大の差別化点。味の品揃え目安：プレーン／抹茶／チョコ／キャラメル／紅茶／いちご／かぼちゃ／ほうじ茶など定番＋季節限定で10種前後。最初は<b>定番5〜6種＋週替り1〜2種</b>から始め、売れ筋を見て絞り込むのが安全です。グルテンフリーは単価を上げやすく、アレルギー対応の需要も取り込めます。
+    </div>
+  </div>
+</section>
+
+<!-- ===== 売上管理 ===== -->
+<section id="sales">
+  <div class="card">
+    <h2>📈 <span class="em">売上管理表</span></h2>
+    <p class="lead">日々の売上を記録。客数・売上を入れると客単価・累計・粗利（原価率35%想定）を自動計算します。</p>
+    <div class="kpis">
+      <div class="kpi"><div class="l">累計売上</div><div class="v" id="s-total">¥0</div><div class="s">記録日合計</div></div>
+      <div class="kpi"><div class="l">累計客数</div><div class="v" id="s-cust">0</div></div>
+      <div class="kpi"><div class="l">平均客単価</div><div class="v" id="s-aov">¥0</div></div>
+      <div class="kpi"><div class="l">推定粗利</div><div class="v" id="s-profit">¥0</div><div class="s">原価率35%想定</div></div>
+    </div>
+    <table>
+      <thead><tr><th style="width:16%">日付</th><th class="num">客数</th><th class="num">売上¥</th><th class="num">客単価¥</th><th>メモ</th><th style="width:6%"></th></tr></thead>
+      <tbody id="sales-body"></tbody>
+    </table>
+    <div class="row" style="margin-top:10px"><button class="btn sm" onclick="addSale()">＋ 売上を記録</button></div>
+  </div>
+</section>
+
+<!-- ===== オーナーToDo ===== -->
+<section id="todo">
+  <div class="card">
+    <h2>✅ <span class="em">オーナーがやるべきこと</span></h2>
+    <p class="lead">「いつ・誰が・何を」を明確化。各項目は<b>テキストを直接編集</b>でき、各グループの「＋ 追加」で行を増やせます。チェックすると概要の残タスク数に反映されます。</p>
+    <div id="todo-groups"></div>
+  </div>
+</section>
+
+<!-- ===== 開業準備 ===== -->
+<section id="prep">
+  <div class="card">
+    <h2>🧾 <span class="em">開業準備チェックリスト</span></h2>
+    <p class="lead">レジ登録・備品・保健所申請・販促準備のチェックリスト。項目は編集可・各グループで追加可。漏れなく潰していきましょう。</p>
+    <div id="prep-groups"></div>
+    <div class="note" style="margin-top:14px">
+      <b>レジ：</b>Airレジ（エアレジ）はiPad＋無料アプリで導入が手軽。決済を入れるならAirペイ等を同時申込（審査に2〜4週間かかるため早めに）。<br>
+      <b>保健所：</b>菓子製造業許可は<b>図面段階での事前相談が最重要</b>。シンク数・手洗い・区画でやり直しが出やすいので工事前に確認を。グルテンフリー表記は景表法・食品表示に沿って慎重に。
+    </div>
+  </div>
+</section>
+
+<!-- ===== 厨房機器 ===== -->
+<section id="equip">
+  <div class="card">
+    <h2>🔧 <span class="em">厨房機器キャパ提案</span></h2>
+    <p class="lead">小規模テイクアウト（1日〜50人想定）向けのコーヒーメーカー／アイスクリーム（ソフト）機の選定アドバイス。</p>
+
+    <h3>① ソフトクリーム機（玉林園グリーンソフト用）</h3>
+    <table>
+      <tr><th style="width:22%">項目</th><th>おすすめ</th></tr>
+      <tr><td>タイプ</td><td><b>卓上型・シングルフレーバー（1口）</b>。グリーンソフト1種なら十分。スペースと電源（単相100V or 200V要確認）も小さくて済みます。</td></tr>
+      <tr><td>能力の目安</td><td>1日50食なら<b>製造能力 15〜25食/時クラス</b>で余裕。ピーク（昼・夕）に20分で10食程度出せれば回ります。</td></tr>
+      <tr><td>予算</td><td>新品 約20〜45万円／状態の良い中古 10〜25万円。<b>初期は中古＋保守契約</b>でコスト圧縮も有効。</td></tr>
+      <tr><td>注意</td><td>玉林園グリーンソフトは<b>専用ミックス（原料）供給</b>が必要。仕入ルートと最低ロット・冷凍保管を先に確認。機器より<b>原料契約が先</b>。</td></tr>
+    </table>
+
+    <h3>② コーヒーメーカー（ブラック／カフェラテ／抹茶オレ用）</h3>
+    <table>
+      <tr><th style="width:22%">項目</th><th>おすすめ</th></tr>
+      <tr><td>基本構成</td><td><b>半自動エスプレッソマシン1グループ＋グラインダー</b>。カフェラテ・抹茶オレ（エスプレッソ無しでもOK）に対応し、ブラックは<b>アメリカーノ</b>で提供すると機器を1台に集約できます。</td></tr>
+      <tr><td>能力の目安</td><td>1日50杯なら1グループで十分。行列が出るなら<b>2グループ</b>へ。湯量が必要な紅茶・ハーブティー用に<b>給湯機能 or 電気ケトル</b>を併設。</td></tr>
+      <tr><td>代替案</td><td>オペレーションを軽くするなら<b>全自動エスプレッソマシン</b>（ボタン1つ）も小規模・少人数運営に好相性。ブラック多めなら<b>バッチブリュー（ドリップ）機</b>併用が効率的。</td></tr>
+      <tr><td>予算</td><td>半自動1グループ＋グラインダー：約25〜60万円。全自動：約30〜80万円。中古・リースも検討余地あり。</td></tr>
+    </table>
+
+    <div class="note" style="margin-top:14px">
+      <b>判断のコツ：</b>「テイクアウト中心・小規模」なら<b>省スペース・少人数で回せること</b>が最優先。最大能力より<b>“ピーク20分をさばけるか”</b>で選ぶと過剰投資を防げます。電源容量・換気・動線（ソフト機→レジ→受渡し）を内装図面と合わせて事前確認を。
+    </div>
+    <div class="note" style="margin-top:10px;border-color:var(--accent)">
+      <b>次に決めること：</b>①グリーンソフトの原料仕入ルート ②コーヒー豆の取引先 ③電源・水道の位置（工事に間に合わせる）。これらは<b>工事中に確定</b>が必須です。
+    </div>
+  </div>
+</section>
+
+<!-- ===== 機器リスト ===== -->
+<section id="gear">
+  <div class="card">
+    <h2>🛒 <span class="em">機器リスト（候補）</span></h2>
+    <p class="lead">コーヒーマシンは<b>3万円前後・ミルクスチーム対応（ラテ可）</b>で厳選。ソフト機は能力重視で別予算。価格は2026年6月時点の目安です。</p>
+    <table>
+      <thead><tr><th style="width:9%">分類</th><th style="width:22%">品名</th><th style="width:12%">価格目安</th><th style="width:16%">タイプ</th><th>メモ</th><th style="width:8%">リンク</th><th style="width:5%"></th></tr></thead>
+      <tbody id="gear-body"></tbody>
+    </table>
+    <div class="row" style="margin-top:10px"><button class="btn sm" onclick="addGear()">＋ 行を追加</button></div>
+    <div class="note" style="margin-top:14px">
+      <b>コーヒーマシン：</b>テイクアウト中心・1日〜50杯なら、<b>デロンギ スティローザ EC235J（約¥22,800）</b>が本命。ミルクスチーム付でカフェラテ・抹茶オレ・カプチーノに対応、ブラックはアメリカーノで出せます。行列が出るようになったら業務用1グループへ更新を。
+    </div>
+    <div class="note" style="margin-top:10px;border-color:var(--accent)">
+      <b>ソフト機：</b>グリーンソフトは<b>能力が安定する業務用卓上機（日世 等）</b>が安心。中古で初期費用を抑える手もありますが、<b>玉林園の専用ミックス仕入と最低ロットの確認が先</b>です。
+    </div>
+  </div>
+</section>
+
+<!-- ===== SNS投稿 ===== -->
+<section id="sns">
+  <div class="card">
+    <h2>📣 <span class="em">SNS投稿・運用マニュアル</span></h2>
+    <p class="lead">投稿ペースのルールと、オープン前期待醸成の投稿案。日付・内容を編集し、投稿したら状態を「投稿済」に。「コピー」で本文をそのまま使えます。</p>
+    <h3>投稿ペース（運用ルール）</h3>
+    <table>
+      <thead><tr><th style="width:30%">媒体</th><th style="width:18%">頻度</th><th>内容の狙い</th></tr></thead>
+      <tbody>
+        <tr><td>Threads＋ストーリーズ</td><td><b>週5回</b></td><td>舞台裏・想い・進捗・問いかけ。素早く小出しに人柄を伝える</td></tr>
+        <tr><td>フィード投稿</td><td><b>週2回</b></td><td>商品ビジュアル・物語・お知らせ。完成度の高い一枚で看板に</td></tr>
+        <tr><td>リール</td><td><b>月2回</b></td><td>カヌレの断面・焼き上がり・ママの働く姿で拡散を狙う</td></tr>
+      </tbody>
+    </table>
+    <div class="note" style="margin-top:10px">
+      <b>週の型（例）：</b>月＝ストーリー/Threads／火＝フィード／水＝ストーリー/Threads／木＝ストーリー/Threads（隔週でリール）／金＝フィード／土＝ストーリー/Threads。<b>物語7：美味しさ3</b>の比率を意識。リールは第2・第4週に1本ずつで月2回。
+    </div>
+    <h3 style="margin-top:18px">オープン前 投稿案</h3>
+    <table>
+      <thead><tr><th style="width:9%">予定</th><th style="width:11%" class="hidesm">媒体</th><th>投稿内容</th><th style="width:12%">状態</th><th style="width:7%"></th><th style="width:6%"></th></tr></thead>
+      <tbody id="posts-body"></tbody>
+    </table>
+    <div class="row" style="margin-top:10px"><button class="btn sm" onclick="addPost()">＋ 投稿を追加</button></div>
+    <div class="note" style="margin-top:14px">
+      <b>運用のコツ：</b>①週2〜3回ペースで「工事→試作→味→ソフト→ロゴ→オープン日」の順に小出し ②毎回1枚でも写真を添える ③問いかけ（どの味が好き？）でコメントを誘発 ④オープン日発表は最も拡散するので画像と固定投稿で。Instagramと同じ内容を相互に使い回してOKです。
+    </div>
+  </div>
+</section>
+
+<!-- ===== SNS戦略 ===== -->
+<section id="strategy">
+  <div class="card">
+    <div class="row" style="justify-content:space-between;align-items:flex-start">
+      <h2>🧭 <span class="em">SNS戦略</span></h2>
+      <button class="btn ghost sm" onclick="copyEl('strategy-body')">本文をコピー</button>
+    </div>
+    <div id="strategy-body">
+      <p class="lead">アカウント @cannele_baton_esaka の分析と、ストーリーを活かした運用方針。</p>
+      <h3>現状（2026年6月時点）</h3>
+      <p>フォロワー147・フォロー中270で<b>オープン前の立ち上げ初期</b>。フォロー中が多く、手動で認知を広げている段階。投稿の蓄積と「物語の見せ方」でこれから伸ばせる地点にいます。</p>
+      <h3>このお店の本質＝最大の資産</h3>
+      <p>カヌレバトンは単なるカヌレ屋ではなく<b>強い社会的ストーリーを持つソーシャルビジネス</b>。①ハンデのある子を育てるママが30分単位シフトで「職人」になれる職場 ②米粉＆おからの<b>グルテンフリー</b>カヌレ（小麦粉・ラム酒不使用） ③店名「バトン」はスタッフから受け取った“挑戦のバトン”が由来。味や価格だけで戦う競合に対し、<b>共感で選ばれ・応援され・語られる</b>唯一の強みがあります。</p>
+      <h3>基本方針：美味しさ7：物語3</h3>
+      <p>物語だけだと“寄付”の空気になり日常購入が続きません。まず商品として魅力的に見せ、背景に物語を添えると、共感が「また買う理由」に変わります。</p>
+      <h3>投稿の3本柱</h3>
+      <p>① 商品の魅力（カヌレの断面・焼き色・グルテンフリー・味の種類・ソフト） ② 物語・人（ママの働く姿・職人になる過程・バトンの意味・想い） ③ 実用情報（オープン日・営業時間・場所・価格・マルシェ・代理販売）。</p>
+      <h3>媒体の役割と頻度</h3>
+      <p>Instagramフィードは「美味しそう」を伝える看板（週2）、Threads＋ストーリーズは想い・舞台裏を素早く小出し（週5）、リールは断面や働く姿で拡散（月2）。同じ内容をInstagramとThreadsで相互に使い回してOK。</p>
+      <h3>すぐやる5つ</h3>
+      <p>①プロフィールにオープン予定・場所（江坂）・グルテンフリーを明記 ②ハイライトに「物語/メニュー/お店の場所」 ③カヌレの断面写真を主役に ④投稿ごとに問いかけでコメント誘発 ⑤オープン日発表は画像＋固定投稿で最大拡散。</p>
+      <h3>ハッシュタグ候補</h3>
+      <p class="small">#カヌレ #グルテンフリー #米粉スイーツ #江坂 #江坂カフェ #吹田 #吹田グルメ #カヌレバトン #テイクアウト #おからスイーツ #アレルギー対応スイーツ #ソーシャルビジネス</p>
+    </div>
+    <div class="note" style="margin-top:12px">投稿ごとのいいね・コメント数はログイン無しでは取得不可。プロアカウントのインサイトを共有いただければ、反応の良い投稿タイプを特定して精度を上げられます。</div>
+  </div>
+</section>
+
+<!-- ===== プレスリリース ===== -->
+<section id="press">
+  <div class="card">
+    <div class="row" style="justify-content:space-between;align-items:flex-start">
+      <h2>📰 <span class="em">プレスリリース例</span></h2>
+      <button class="btn ghost sm" onclick="copyEl('press-body')">本文をコピー</button>
+    </div>
+    <p class="lead">◯◯部分はオープン日・電話番号などを確定後に差し替えてください。</p>
+    <div id="press-body" style="font-size:13px;line-height:1.8">
+      <p>報道関係者各位<br>2026年◯月◯日／株式会社Bell</p>
+      <p><b>「私たちは、社会の戦力外じゃない」——ハンデのある子を育てるママが“30分から職人になれる”グルテンフリーカヌレ店「カヌレバトン」、大阪・江坂に◯月◯日オープン</b></p>
+      <p>放課後等デイサービス「たんぽぽのわたげ」を運営する株式会社Bell（大阪府吹田市、代表：岩井絵里子）は、米粉とおからを使ったグルテンフリーのカヌレ専門店「カヌレバトン（cannelé baton）江坂店」を、2026年◯月◯日（◯）に吹田市江坂町にオープンします。本店は、ハンデのあるお子さんを育てるお母さんたちが<b>30分単位の超短時間シフト</b>で「職人」として働ける就労の場を兼ねた、地域発のソーシャルプロジェクトです。</p>
+      <p><b>■ 背景：子どもを救うために、まず「ママ」を救いたい</b><br>代表の岩井は自閉症のお子さんを育てる母であり元看護師。「働きたいのに時間が壁になり“戦力外”のように扱われるママの現実」に向き合い、未経験から胸を張って『職人』になれる場所として本店を立ち上げました。店名の「バトン」には、岩井が体調を崩した際にスタッフが「私たちが代わります」と受け取った“挑戦のバトン”の意味が込められています。</p>
+      <p><b>■ 商品の特徴</b><br>小麦粉・ラム酒不使用、米粉とおからのグルテンフリー。外はカリッ、中はもっちりの独自食感。プレーン・抹茶・チョコ等の多彩なフレーバー、コーヒーやソフトクリームも提供予定。アレルギーや健康を気づかう方にも安心。</p>
+      <p><b>■ 店舗概要</b><br>店名：カヌレバトン 江坂店／所在地：大阪府吹田市江坂町4-9-1（たんぽぽのわたげ＋ 1階）／オープン：2026年◯月◯日／営業：◯:◯〜◯:◯／販売：テイクアウト中心・店頭・代理販売・マルシェ出店／Instagram：@cannele_baton_esaka</p>
+      <p><b>■ お問い合わせ</b><br>株式会社Bell カヌレバトン担当：◯◯／TEL：◯◯◯-◯◯◯◯-◯◯◯◯／Email：◯◯（公開時に記載）</p>
+    </div>
+    <div class="note" style="margin-top:12px"><b>配信のヒント：</b>地域メディア（吹田日和 等）・地元新聞地域面・福祉/ソーシャル系・グルテンフリー情報サイトへ。写真は「断面」と「人（働く様子）」が採用されやすい。オープン1〜2週間前に配信し取材可能日を明記。</div>
+  </div>
+</section>
+
+<div class="card" style="margin-top:8px;border-color:var(--accent)">
+  <h3 style="margin-top:0">🤝 オーナーと共有する</h3>
+  <p class="small" style="margin:0 0 10px">「共有用HTMLを書き出し」を押すと、<b>今の入力内容ごと1つのファイル</b>になります。それをメール／LINE／クラウド等でオーナーに送れば、ダブルクリックで開いて同じ内容を閲覧・編集できます（特別なアプリ不要・オフラインで動作）。オーナー側の編集はオーナーのPCに保存され、元に戻したいときは再度この共有ファイルを送ってください。</p>
+  <div class="row" style="gap:8px">
+    <button class="btn" onclick="shareHTML()">📤 オーナー共有用HTMLを書き出し</button>
+    <button class="btn ghost sm" onclick="exportData()">⬇ データ書き出し(JSON)</button>
+    <button class="btn ghost sm" onclick="document.getElementById('imp').click()">⬆ データ読み込み(JSON)</button>
+    <input type="file" id="imp" accept="application/json" style="display:none" onchange="importData(event)">
+  </div>
+  <p class="saveinfo" style="margin-bottom:0">※ 入力データはこのブラウザに自動保存されます。共有HTMLは送った時点の内容のスナップショットです。</p>
+</div>
+
+<footer>カヌレバトン｜コンサルティング進行管理ツール</footer>
+</div>
+
+<script>
+const KEY='canele_baton_v1';
+const TABS=[['overview','概要'],['schedule','進行表'],['menu','メニュー価格'],['sales','売上管理'],['todo','オーナーToDo'],['prep','開業準備'],['equip','厨房機器'],['gear','機器リスト'],['sns','SNS投稿'],['strategy','SNS戦略'],['press','プレスリリース']];
+
+// ---- default data ----
+const DEFAULT={
+  sched:[
+    ['物件・契約','保健所事前相談／菓子製造業許可の要件確認','6月前半','6月前半','6/20','doing'],
+    ['内装工事','内装工事 着工（〜7月末）','6月後半','7月後半','7/31','doing'],
+    ['厨房機器','コーヒーマシン・ソフト機の選定と発注','6月後半','7月前半','6/30','todo'],
+    ['メニュー','カヌレの味・ドリンク・価格を確定','6月後半','7月前半','6/30','todo'],
+    ['仕入','グリーンソフト原料・コーヒー豆の取引先確定','6月後半','7月前半','6/30','todo'],
+    ['許可','菓子製造業許可 申請・図面提出','7月前半','7月前半','7/10','todo'],
+    ['試作','カヌレ レシピ・焼成の最終調整','7月前半','7月後半','7/15','todo'],
+    ['販促','店名ロゴ・Instagram/Threads開設','7月前半','7月後半','7/15','todo'],
+    ['備品','包材・レジ・POP・ショップカード手配','7月後半','7月後半','7/25','todo'],
+    ['検査','保健所 完了検査・許可証受領','7月後半','7月後半','7/31','todo'],
+    ['OPEN','プレオープン→グランドオープン','8月初','8月初','8/3','todo'],
+  ],
+  menu:[
+    ['カヌレ','カヌレ プレーン',280,90],
+    ['カヌレ','カヌレ 抹茶',300,100],
+    ['カヌレ','カヌレ チョコ',300,100],
+    ['カヌレ','カヌレ キャラメル',300,100],
+    ['カヌレ','カヌレ 紅茶',300,100],
+    ['カヌレ','カヌレ いちご(季節)',320,110],
+    ['焼菓子','クッキー',200,60],
+    ['ソフト','玉林園グリーンソフト',400,140],
+    ['ドリンク','ブラックコーヒー',350,75],
+    ['ドリンク','カフェラテ',450,120],
+    ['ドリンク','抹茶オレ',480,140],
+    ['ドリンク','紅茶',400,90],
+    ['ドリンク','ハーブティー',420,95],
+  ],
+  sales:[],
+  todo:{
+    '今すぐ（工事中）':[
+      ['グリーンソフトの原料仕入ルート・最低ロットを玉林園に確認',false],
+      ['コーヒー豆の取引先を2社見積り比較',false],
+      ['厨房機器の電源容量・設置位置を内装業者と共有',false],
+      ['保健所に菓子製造業許可の要件を事前相談',false],
+    ],
+    'オープン前（7月）':[
+      ['メニュー・価格を最終確定しPOP作成',false],
+      ['Instagram / Googleビジネスプロフィール開設',false],
+      ['カヌレ試作を5回以上、焼成条件を記録',false],
+      ['包材・ショップカード・レジ周り手配',false],
+    ],
+    'オープン後（運営）':[
+      ['毎日この売上管理表に客数・売上を入力',false],
+      ['週1で売れ筋カヌレを確認し品揃えを調整',false],
+    ],
+  },
+  gear:[
+    ['コーヒー','デロンギ スティローザ EC235J','¥22,800','セミオート/スチーム有','◎本命候補。コスパ良・ラテ/カプチーノ可・省スペース','https://www.amazon.co.jp/s?k=デロンギ+スティローザ+EC235J'],
+    ['コーヒー','デロンギ EC152J','¥26,000','セミオート/スチーム有','最小クラス。テイクアウト中心なら十分','https://www.amazon.co.jp/s?k=デロンギ+EC152J'],
+    ['コーヒー','デバイスタイル TH-W030','¥27,000','セミオート/スチーム有','据置きやすいサイズ・安定抽出','https://www.amazon.co.jp/s?k=デバイスタイル+TH-W030'],
+    ['コーヒー','デロンギ アイコナ ECO310B','¥28,745','セミオート/スチーム有','レトロ外観で映える','https://www.amazon.co.jp/s?k=デロンギ+アイコナ+ECO310B'],
+    ['コーヒー','デロンギ EM450J クラシック','¥32,500','セミオート/スチーム有','やや予算超。耐久性高め','https://www.amazon.co.jp/s?k=デロンギ+EM450J'],
+    ['ソフト','日世 卓上型 NA-9524AE（新品）','約30〜50万','業務用/卓上シングル','グリーンソフト本命。能力十分・別予算','https://www.google.com/search?q=日世+ソフトクリームマシン+NA-9524AE'],
+    ['ソフト','中古ソフトクリームマシン（テンポス等）','約10〜25万','業務用中古','初期費用を抑える選択肢。要保守確認','https://www.tenpos.com/c/outlet-cold-all/outlet-ice-machine2'],
+    ['ソフト','小型卓上ソフトメーカー（簡易型）','約3〜8万','簡易型','能力低め。補助・短時間提供向き','https://www.google.com/search?q=卓上+ソフトクリームメーカー+業務用'],
+  ],
+  posts:[
+    ['7/上','Threads','はじめまして。江坂に、ちょっと特別なカヌレ屋さんをオープンします。その名も「カヌレバトン」。想いをつなぐ、グルテンフリーのカヌレ屋です。準備の様子、ここで少しずつお見せします。','todo'],
+    ['7/上','Threads','このお店、実は“ママたちの職場”でもあります。ハンデのある子を育てるママが、30分単位のシフトで「職人」になれる場所をつくっています。','todo'],
+    ['7/中','Threads','私たちのカヌレは、米粉とおから。小麦粉もラム酒も使っていません。グルテンフリーなのに、外はカリッ、中はもっちり。この食感、自信あります。','todo'],
+    ['7/中','Threads','店名の「バトン」には理由があります。私が倒れたとき「私たちが代わります」と受け取ってくれた、スタッフからの挑戦のバトン。その想いをお客様へ、次の誰かへ。','todo'],
+    ['7/中','Threads','カヌレ作りは想像以上に繊細でした。その日の温度や湿度で焼き上がりが変わる。「あと10分焼くか」を五感で判断する毎日です。','todo'],
+    ['7/下','Threads','味のラインナップ、考え中です。プレーン/抹茶/チョコ/キャラメル/紅茶…気になる味はありますか？コメントで教えてください🥐','todo'],
+    ['7/下','Threads','カヌレのおともに、コーヒーも準備中。カフェラテ・抹茶オレも。そして…緑のソフトクリームも置きます🍦 罪深い組み合わせ、待っててください。','todo'],
+    ['7/下','Threads','場所は江坂町、放課後デイ「たんぽぽのわたげ＋」の1階。少し奥まった場所だけど、ここを「希望の見える場所」にしていきます。','todo'],
+    ['8/初','Threads','「私たちは、社会の戦力外じゃない」。このお店は、その証明です。下を向くママを一人でも笑顔にしたい。その背中を子どもたちに見てほしい。','todo'],
+    ['8/初','Threads','【お知らせ】オープン日が決まりました！◯月◯日。最初の数日はささやかなプレオープン。江坂で、あなたに会えますように。','todo'],
+  ],
+  prep:{
+    'レジ・会計':[
+      ['Airレジ（エアレジ）アカウント登録・iPad設定',false],
+      ['Airペイ等 キャッシュレス決済の申込（クレカ/QR/交通系）',false],
+      ['レシートプリンター・キャッシュドロアの手配',false],
+      ['商品マスタ（メニュー・価格）をレジに登録',false],
+      ['釣銭準備・レジ締め・売上記録の運用ルール決め',false],
+    ],
+    '保健所・行政':[
+      ['菓子製造業許可の事前相談（管轄保健所）',false],
+      ['施設要件の確認（手洗い・2槽シンク・冷蔵冷凍・換気）',false],
+      ['食品衛生責任者の配置（講習受講・修了証）',false],
+      ['営業許可申請書・施設図面の提出',false],
+      ['完了検査の立会い・営業許可証の受領',false],
+      ['消防・防火に関する届出の要否確認',false],
+      ['食品表示（原材料・アレルゲン・グルテンフリー表記）の確認',false],
+    ],
+    '包材・店頭備品':[
+      ['カヌレ個包装袋・テイクアウト箱（小/中/大）',false],
+      ['手提げ袋（ショッパー）大小',false],
+      ['ショップカード・フレーバー表示ラベル・シール',false],
+      ['トレー・トング・グラシン紙',false],
+      ['ドリンクカップ・リッド・ストロー・スリーブ',false],
+      ['値札・POP・プライスカード・メニューボード',false],
+      ['のぼり・看板・営業中プレート',false],
+    ],
+    '厨房・消耗品':[
+      ['カヌレ型（銅／シリコン）・天板',false],
+      ['計量器・ボウル・泡立て・絞り袋',false],
+      ['冷蔵・冷凍庫の容量と設置確認',false],
+      ['使い捨て手袋・ペーパー・洗剤・アルコール',false],
+      ['ゴミ箱・分別・原材料の保管棚',false],
+    ],
+    '販促・オープン準備':[
+      ['Googleビジネスプロフィール登録（地図・営業時間）',false],
+      ['Instagram/Threadsプロフィール整備（場所・GF・オープン日）',false],
+      ['プレスリリース作成・地域メディアへ配信',false],
+      ['近隣店・代理販売先への挨拶・卸条件の相談',false],
+      ['プレオープン（関係者・知人試食）の実施',false],
+    ],
+  }
+};
+
+let DATA=load();
+function migrateData(d){
+  if(!d||!d.sched)return structuredClone(DEFAULT);
+  ['gear','posts','prep'].forEach(k=>{if(!d[k])d[k]=structuredClone(DEFAULT[k]);});
+  // migrate old 5-col schedule [時期,工程,タスク,期限,状態] -> [工程,タスク,開始,終了,期限,状態]
+  const P=['6月前半','6月後半','7月前半','7月後半','8月初'];
+  d.sched=d.sched.map(r=>{if(r.length>=6)return r;const per=P.includes(r[0])?r[0]:'6月前半';return [r[1]||'',r[2]||'',per,per,r[3]||'',r[4]||'todo'];});
+  return d;
+}
+function load(){try{const raw=localStorage.getItem(KEY);
+  const d=raw?JSON.parse(raw):(window.SHARED_DATA?structuredClone(window.SHARED_DATA):null);
+  return migrateData(d);}catch(e){return structuredClone(DEFAULT);}}
+function saveLocal(){localStorage.setItem(KEY,JSON.stringify(DATA));}
+function save(){saveLocal();renderKPI();cloudSave();}
+
+// ---- nav ----
+function buildNav(){
+  const nav=document.getElementById('nav');nav.innerHTML='';
+  TABS.forEach(([id,label],i)=>{const b=document.createElement('button');b.textContent=label;if(i===0)b.className='active';
+    b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+    document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');};
+    nav.appendChild(b);});
+}
+buildNav();
+
+const yen=n=>'¥'+(Math.round(n)||0).toLocaleString();
+
+// ---- schedule ----
+const PERIODS=['6月前半','6月後半','7月前半','7月後半','8月初'];
+function perOpt(sel){return PERIODS.map(p=>`<option ${p===sel?'selected':''}>${p}</option>`).join('');}
+function renderSched(){
+  const tb=document.getElementById('sched-body');tb.innerHTML='';
+  DATA.sched.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><input value="${esc(r[0])}" onchange="upd('sched',${i},0,this.value)"></td>
+      <td><input value="${esc(r[1])}" onchange="upd('sched',${i},1,this.value)"></td>
+      <td><select onchange="upd('sched',${i},2,this.value)">${perOpt(r[2])}</select></td>
+      <td><select onchange="upd('sched',${i},3,this.value)">${perOpt(r[3])}</select></td>
+      <td><input value="${esc(r[4]||'')}" onchange="upd('sched',${i},4,this.value)"></td>
+      <td><select onchange="upd('sched',${i},5,this.value)">
+        <option value="todo"${r[5]==='todo'?' selected':''}>未着手</option>
+        <option value="doing"${r[5]==='doing'?' selected':''}>進行中</option>
+        <option value="done"${r[5]==='done'?' selected':''}>完了</option>
+      </select></td>
+      <td><button class="btn del sm" onclick="rm('sched',${i})">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+  const done=DATA.sched.filter(r=>r[5]==='done').length, tot=DATA.sched.length;
+  const pct=tot?Math.round(done/tot*100):0;
+  document.getElementById('prog-bar').style.width=pct+'%';
+  document.getElementById('prog-label').textContent=`工程完了 ${done} / ${tot}（${pct}%）`;
+  renderGantt();
+}
+function addSched(){DATA.sched.push(['','','6月前半','6月前半','','todo']);save();renderSched();}
+
+// ---- gantt (linked to schedule + todo) ----
+function todoStats(tname){let d=0,t=0;Object.values(DATA.todo).forEach(a=>a.forEach(it=>{if(it[2]&&it[2]===tname){t++;if(it[1])d++;}}));return[d,t];}
+function renderGantt(){
+  const box=document.getElementById('gantt');if(!box)return;
+  let html='<table class="gantt" style="min-width:680px"><thead><tr><th style="text-align:left;min-width:150px">工程／タスク</th>';
+  PERIODS.forEach(p=>html+=`<th>${p}</th>`);
+  html+='<th>ToDo</th></tr></thead><tbody>';
+  DATA.sched.forEach(r=>{
+    const s=PERIODS.indexOf(r[2]),e=PERIODS.indexOf(r[3]);
+    const col=r[5]==='done'?'var(--ok)':r[5]==='doing'?'linear-gradient(90deg,var(--gold),var(--accent))':'#e7ddcf';
+    const mark=r[5]==='done'?'✓':r[5]==='doing'?'●':'';
+    html+=`<tr><td style="text-align:left">${esc(r[0]||'')}<br><span class="small">${esc(r[1]||'')}</span></td>`;
+    for(let k=0;k<PERIODS.length;k++){
+      const on=s>=0&&e>=0&&k>=Math.min(s,e)&&k<=Math.max(s,e);
+      html+=`<td>${on?`<div class="g" style="background:${col}">${k===Math.min(s,e)?mark:''}</div>`:''}</td>`;
+    }
+    const[td,tt]=todoStats(r[1]);
+    html+=`<td>${tt?`<b style="color:${td===tt?'var(--ok)':'var(--accent-d)'}">${td}/${tt}</b>`:'<span class="small">—</span>'}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  box.innerHTML=html;
+}
+
+// ---- menu ----
+function renderMenu(){
+  const tb=document.getElementById('menu-body');tb.innerHTML='';let rsum=0,n=0;
+  DATA.menu.forEach((r,i)=>{
+    const price=+r[2]||0, cost=+r[3]||0, prof=price-cost, rate=price?Math.round(cost/price*100):0;
+    if(price){rsum+=rate;n++;}
+    const col=rate<=35?'var(--ok)':rate<=42?'var(--warn)':'var(--bad)';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><input value="${r[0]}" onchange="upd('menu',${i},0,this.value)"></td>
+      <td><input value="${r[1]}" onchange="upd('menu',${i},1,this.value)"></td>
+      <td class="num"><input type="number" value="${price}" onchange="updn('menu',${i},2,this.value)"></td>
+      <td class="num"><input type="number" value="${cost}" onchange="updn('menu',${i},3,this.value)"></td>
+      <td class="num">${yen(prof)}</td>
+      <td class="num" style="color:${col};font-weight:700">${rate}%</td>
+      <td><button class="btn del sm" onclick="rm('menu',${i})">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+  document.getElementById('m-rate').textContent=(n?Math.round(rsum/n):0)+'%';
+  document.getElementById('m-count').textContent=DATA.menu.length;
+  // AOV想定：カヌレ2個 + ドリンク1
+  const canele=DATA.menu.filter(r=>r[0]==='カヌレ').map(r=>+r[2]||0);
+  const drink=DATA.menu.filter(r=>r[0]==='ドリンク').map(r=>+r[2]||0);
+  const ca=canele.length?canele.reduce((a,b)=>a+b)/canele.length:0;
+  const dr=drink.length?drink.reduce((a,b)=>a+b)/drink.length:0;
+  const aov=Math.round(ca*2+dr);
+  document.getElementById('m-aov').textContent=yen(aov);
+  document.getElementById('kpi-aov').textContent=yen(aov);
+}
+function addMenu(){DATA.menu.push(['',' ',0,0]);save();renderMenu();}
+
+// ---- sales ----
+function renderSales(){
+  const tb=document.getElementById('sales-body');tb.innerHTML='';let st=0,sc=0;
+  DATA.sales.forEach((r,i)=>{
+    const cust=+r[1]||0, amt=+r[2]||0; st+=amt; sc+=cust;
+    const aov=cust?Math.round(amt/cust):0;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><input type="date" value="${r[0]}" onchange="upd('sales',${i},0,this.value)"></td>
+      <td class="num"><input type="number" value="${cust}" onchange="updn('sales',${i},1,this.value)"></td>
+      <td class="num"><input type="number" value="${amt}" onchange="updn('sales',${i},2,this.value)"></td>
+      <td class="num">${yen(aov)}</td>
+      <td><input value="${r[3]||''}" onchange="upd('sales',${i},3,this.value)"></td>
+      <td><button class="btn del sm" onclick="rm('sales',${i})">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+  document.getElementById('s-total').textContent=yen(st);
+  document.getElementById('s-cust').textContent=sc.toLocaleString();
+  document.getElementById('s-aov').textContent=yen(sc?st/sc:0);
+  document.getElementById('s-profit').textContent=yen(st*0.65);
+}
+function addSale(){const d=new Date().toISOString().slice(0,10);DATA.sales.push([d,0,0,'']);save();renderSales();}
+
+// ---- checklist (todo / prep) ----
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+function renderChecklist(key,cid){
+  const wrap=document.getElementById(cid);wrap.innerHTML='';
+  Object.keys(DATA[key]).forEach(g=>{
+    const h=document.createElement('h3');
+    h.style.cssText='display:flex;justify-content:space-between;align-items:center';
+    h.innerHTML=`<span>${g}</span><button class="btn ghost sm" onclick="addCheck('${key}','${g}')">＋ 追加</button>`;
+    wrap.appendChild(h);
+    const box=document.createElement('div');box.className='check-list';
+    DATA[key][g].forEach((t,i)=>{
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;gap:8px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--line);flex-wrap:wrap';
+      const link=key==='todo'?`<select title="連動する工程" style="width:130px;flex:0 0 auto;font-size:12px" onchange="setLink('${g}',${i},this.value)">${schedTaskOpts(t[2]||'')}</select>`:'';
+      row.innerHTML=`<input type="checkbox" ${t[1]?'checked':''} onchange="togCheck('${key}','${g}',${i},this.checked)">
+        <input value="${esc(t[0])}" style="flex:1;min-width:140px;${t[1]?'color:var(--sub);text-decoration:line-through':''}" onchange="editCheck('${key}','${g}',${i},this.value)">
+        ${link}
+        <button class="btn del sm" onclick="rmCheck('${key}','${g}',${i})">✕</button>`;
+      box.appendChild(row);
+    });
+    wrap.appendChild(box);
+  });
+}
+function schedTaskOpts(sel){let o=`<option value="">工程リンク無</option>`;
+  DATA.sched.forEach(r=>{if(r[1])o+=`<option value="${esc(r[1])}" ${r[1]===sel?'selected':''}>${esc(r[0]||'')}</option>`;});return o;}
+function togCheck(k,g,i,v){DATA[k][g][i][1]=v;save();afterCheck(k);}
+function editCheck(k,g,i,v){DATA[k][g][i][0]=v;save();}
+function setLink(g,i,v){DATA.todo[g][i][2]=v;save();renderGantt();}
+function rmCheck(k,g,i){DATA[k][g].splice(i,1);save();afterCheck(k);}
+function addCheck(k,g){DATA[k][g].push(k==='todo'?['新しい項目',false,'']:['新しい項目',false]);save();afterCheck(k);}
+function afterCheck(k){renderChecklist(k,k==='todo'?'todo-groups':'prep-groups');renderKPI();renderGantt();}
+
+// ---- shared ----
+function upd(t,i,j,v){DATA[t][i][j]=v;save();if(t==='sched')renderSched();if(t==='gear')renderGear();}
+function updn(t,i,j,v){DATA[t][i][j]=+v;save();if(t==='menu')renderMenu();if(t==='sales')renderSales();}
+function rm(t,i){DATA[t].splice(i,1);save();({sched:renderSched,menu:renderMenu,sales:renderSales,gear:renderGear,posts:renderPosts}[t])();}
+function renderKPI(){
+  const sDone=DATA.sched.filter(r=>r[5]==='done').length,sTot=DATA.sched.length;
+  let tDone=0,tTot=0,rem=0;
+  Object.values(DATA.todo).forEach(a=>a.forEach(t=>{tTot++;if(t[1])tDone++;else rem++;}));
+  const done=sDone+tDone,tot=sTot+tTot;
+  document.getElementById('kpi-prog').textContent=(tot?Math.round(done/tot*100):0)+'%';
+  document.getElementById('kpi-todo').textContent=rem+'件';
+}
+
+// ---- import/export ----
+function exportData(){const b=new Blob([JSON.stringify(DATA,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='カヌレバトン_データ.json';a.click();}
+// オーナー共有用：現在の入力内容を埋め込んだ単一HTMLを書き出す
+function shareHTML(){
+  const dyn=['nav','sched-body','menu-body','sales-body','gear-body','posts-body','todo-groups','prep-groups','gantt'];
+  dyn.forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
+  const html0=document.documentElement.outerHTML;
+  renderAll();buildNav(); // 自分の画面はすぐ復元
+  let html=html0;
+  const json=JSON.stringify(DATA).replace(/<\/script>/gi,'<\\/script>').replace(/</g,'\\u003c');
+  html=html.replace('</head>','<script>window.SHARED_DATA='+json+';<\/script>\n</head>');
+  const blob=new Blob(['<!DOCTYPE html>\n'+html],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='カヌレバトン_オーナー共有用.html';a.click();
+}
+function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{DATA=JSON.parse(r.result);save();renderAll();alert('読み込みました');}catch(x){alert('読み込みに失敗しました');}};r.readAsText(f);}
+
+// ---- gear ----
+function renderGear(){
+  const tb=document.getElementById('gear-body');tb.innerHTML='';
+  DATA.gear.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    const c=r[0]==='ソフト'?'#e6f0fb':'#fbf1e6';
+    const url=r[5]||('https://www.google.com/search?q='+encodeURIComponent((r[1]||'')+' 通販'));
+    tr.innerHTML=`
+      <td style="background:${c}"><input value="${esc(r[0])}" onchange="upd('gear',${i},0,this.value)"></td>
+      <td><input value="${esc(r[1])}" onchange="upd('gear',${i},1,this.value)"></td>
+      <td><input value="${esc(r[2])}" onchange="upd('gear',${i},2,this.value)"></td>
+      <td><input value="${esc(r[3])}" onchange="upd('gear',${i},3,this.value)"></td>
+      <td><input value="${esc(r[4])}" onchange="upd('gear',${i},4,this.value)"></td>
+      <td><a href="${url}" target="_blank" rel="noopener" class="btn ghost sm" style="text-decoration:none;display:inline-block">開く↗</a></td>
+      <td><button class="btn del sm" onclick="rm('gear',${i})">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function addGear(){DATA.gear.push(['コーヒー','','','','','']);save();renderGear();}
+
+// ---- posts ----
+function renderPosts(){
+  const tb=document.getElementById('posts-body');tb.innerHTML='';
+  DATA.posts.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><input value="${r[0]}" onchange="upd('posts',${i},0,this.value)"></td>
+      <td class="hidesm"><input value="${r[1]}" onchange="upd('posts',${i},1,this.value)"></td>
+      <td><textarea rows="3" onchange="upd('posts',${i},2,this.value)">${r[2]}</textarea></td>
+      <td><select onchange="upd('posts',${i},3,this.value)">
+        <option value="todo"${r[3]==='todo'?' selected':''}>未投稿</option>
+        <option value="done"${r[3]==='done'?' selected':''}>投稿済</option>
+      </select></td>
+      <td><button class="btn ghost sm" onclick="copyPost(${i})">コピー</button></td>
+      <td><button class="btn del sm" onclick="rm('posts',${i})">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function addPost(){DATA.posts.push(['','Threads','','todo']);save();renderPosts();}
+function copyPost(i){const t=DATA.posts[i][2];navigator.clipboard?.writeText(t).then(()=>{
+  const b=event.target;const o=b.textContent;b.textContent='コピー済';setTimeout(()=>b.textContent=o,1200);}).catch(()=>alert(t));}
+
+function copyEl(id){const el=document.getElementById(id);const t=el?el.innerText:'';
+  navigator.clipboard?.writeText(t).then(()=>{const b=event.target;const o=b.textContent;b.textContent='コピーしました';setTimeout(()=>b.textContent=o,1400);}).catch(()=>alert('コピーできませんでした'));}
+function renderAll(){renderSched();renderMenu();renderSales();renderChecklist('todo','todo-groups');renderChecklist('prep','prep-groups');renderGear();renderPosts();renderGantt();renderKPI();}
+
+/* ===== オンライン同期（Supabase） ===== */
+const CFG_KEY='canele_baton_cloud';
+// 既定値（セットアップ後にここへ貼り付けておくと、開いた人は設定不要で自動接続）
+const SUPA_URL_DEFAULT='';
+const SUPA_KEY_DEFAULT='';
+let sb=null, applyingRemote=false, _saveTimer=null;
+function getCfg(){try{const c=JSON.parse(localStorage.getItem(CFG_KEY));if(c&&c.url&&c.key)return c;}catch(e){}
+  if(SUPA_URL_DEFAULT&&SUPA_KEY_DEFAULT)return{url:SUPA_URL_DEFAULT,key:SUPA_KEY_DEFAULT,room:'canele-baton'};return null;}
+function setStatus(cls,txt){const el=document.getElementById('cloud-status');if(!el)return;el.className='cstat '+cls;el.textContent=txt;}
+function openSettings(){const c=getCfg()||{};
+  document.getElementById('set-url').value=c.url||'';
+  document.getElementById('set-key').value=c.key||'';
+  document.getElementById('set-room').value=c.room||'canele-baton';
+  document.getElementById('set-msg').textContent='';
+  document.getElementById('settings').classList.add('show');}
+function closeSettings(){document.getElementById('settings').classList.remove('show');}
+function saveSettings(){
+  const url=document.getElementById('set-url').value.trim().replace(/\/$/,'');
+  const key=document.getElementById('set-key').value.trim();
+  const room=(document.getElementById('set-room').value.trim()||'canele-baton');
+  if(!/^https:\/\/.+\.supabase\.co$/.test(url)){document.getElementById('set-msg').textContent='⚠ Project URLの形式が正しくありません（https://xxxx.supabase.co）';return;}
+  if(!key.startsWith('ey')){document.getElementById('set-msg').textContent='⚠ anon key の形式が正しくないようです（eyから始まります）';return;}
+  localStorage.setItem(CFG_KEY,JSON.stringify({url,key,room}));
+  document.getElementById('set-msg').textContent='接続しています…';
+  initCloud(true);
+}
+function disconnectCloud(){localStorage.removeItem(CFG_KEY);if(sb){try{sb.removeAllChannels();}catch(e){}}sb=null;setStatus('off','● オフライン');document.getElementById('set-msg').textContent='切断しました（このブラウザのみ保存）。';}
+const APP_ID=()=>{const c=getCfg();return c&&c.room?c.room:'canele-baton';};
+async function initCloud(fromSettings){
+  const cfg=getCfg();
+  if(!cfg){setStatus('off','● オフライン');return;}
+  if(!window.supabase){setStatus('err','● ライブラリ未読込');if(fromSettings)document.getElementById('set-msg').textContent='⚠ オンライン環境（公開URL）で開いてください。ローカルファイルだと接続ライブラリが読み込めません。';return;}
+  try{
+    setStatus('sync','● 接続中…');
+    sb=window.supabase.createClient(cfg.url,cfg.key);
+    const id=APP_ID();
+    const {data,error}=await sb.from('app_state').select('data').eq('id',id).maybeSingle();
+    if(error){throw error;}
+    if(data&&data.data){applyingRemote=true;DATA=migrateData(data.data);saveLocal();renderAll();applyingRemote=false;}
+    else{await sb.from('app_state').upsert({id,data:DATA,updated_at:new Date().toISOString()});}
+    sb.channel('rt-'+id).on('postgres_changes',{event:'*',schema:'public',table:'app_state',filter:'id=eq.'+id},payload=>{
+      const nd=payload.new&&payload.new.data;if(!nd)return;
+      if(JSON.stringify(nd)!==JSON.stringify(DATA)){applyingRemote=true;DATA=migrateData(nd);saveLocal();renderAll();applyingRemote=false;}
+    }).subscribe();
+    setStatus('on','● オンライン同期中');
+    if(fromSettings){document.getElementById('set-msg').textContent='✓ 接続しました。同じURL・キー・スペースIDを入れた人と共有されます。';setTimeout(closeSettings,1200);}
+  }catch(e){setStatus('err','● 接続エラー');if(fromSettings)document.getElementById('set-msg').textContent='⚠ 接続エラー: '+(e.message||e)+'（URL/キー/テーブル作成SQLをご確認ください）';}
+}
+function cloudSave(){
+  if(!sb||applyingRemote)return;
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(async()=>{
+    try{setStatus('sync','● 保存中…');
+      const {error}=await sb.from('app_state').upsert({id:APP_ID(),data:DATA,updated_at:new Date().toISOString()});
+      setStatus(error?'err':'on',error?'● 保存エラー':'● オンライン同期中');
+    }catch(e){setStatus('err','● 保存エラー');}
+  },700);
+}
+
+renderAll();
+initCloud();
+</script>
+</body>
+</html>
