@@ -84,10 +84,38 @@
     .card{padding:14px;}
     input,select,textarea{font-size:16px;} /* iOS拡大防止 */
   }
-  footer{text-align:center;color:var(--sub);font-size:11px;padding:20px;}
+  nav button{transition:background .15s,color .15s;}
+  .kpi{transition:transform .15s,box-shadow .15s;}
+  .kpi:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.07);}
+  .card{transition:box-shadow .15s;}
+  .btn{transition:filter .12s,transform .08s;} .btn:active{transform:translateY(1px);}
+  .btn:hover{filter:brightness(1.05);}
+  tbody tr:hover td{background:#fbf7f1;}
+  #toTop{position:fixed;right:16px;bottom:16px;z-index:40;border:0;background:var(--accent);color:#fff;width:46px;height:46px;border-radius:50%;font-size:20px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.22);opacity:0;pointer-events:none;transition:opacity .2s;}
+  #toTop.show{opacity:.92;pointer-events:auto;}
+  #toTop:hover{opacity:1;}
+  #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(18px);background:#3a2e25;color:#fff;padding:9px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:60;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;box-shadow:0 6px 20px rgba(0,0,0,.25);}
+  #toast.show{opacity:.96;transform:translateX(-50%) translateY(0);}
+  #gate{position:fixed;inset:0;z-index:100;background:linear-gradient(135deg,#b9783f,#9a5f2c);display:flex;align-items:center;justify-content:center;padding:20px;}
+  #gate.hide{display:none;}
+  #gate .gbox{background:#fff;border-radius:18px;padding:28px 24px;max-width:380px;width:100%;text-align:center;box-shadow:0 12px 44px rgba(0,0,0,.32);}
+  #gate h2{margin:6px 0 4px;} #gate p{color:var(--sub);font-size:13px;margin:0 0 16px;}
+  #gate input{text-align:center;font-size:16px;margin-bottom:10px;}
+  #gate .err{color:var(--bad);font-size:12px;min-height:16px;margin-top:8px;}
+  footer{text-align:center;color:var(--sub);font-size:11px;padding:20px 20px 80px;}
 </style>
 </head>
 <body>
+<div id="gate">
+  <div class="gbox">
+    <div style="font-size:34px">🥐🔒</div>
+    <h2>カヌレバトン</h2>
+    <p>合言葉を入力してください</p>
+    <input id="gate-input" type="password" placeholder="合言葉" autocomplete="off" onkeydown="if(event.key==='Enter')unlockGate()">
+    <button class="btn" style="width:100%" onclick="unlockGate()">入る</button>
+    <div class="err" id="gate-err"></div>
+  </div>
+</div>
 <header>
   <div class="hrow">
     <div>
@@ -380,6 +408,8 @@
 </div>
 
 <footer>カヌレバトン｜コンサルティング進行管理ツール</footer>
+<button id="toTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="トップへ戻る">↑</button>
+<div id="toast"></div>
 </div>
 
 <script>
@@ -537,17 +567,30 @@ function load(){try{const raw=localStorage.getItem(KEY);
   const d=raw?JSON.parse(raw):(window.SHARED_DATA?structuredClone(window.SHARED_DATA):null);
   return migrateData(d);}catch(e){return structuredClone(DEFAULT);}}
 function saveLocal(){localStorage.setItem(KEY,JSON.stringify(DATA));}
-function save(){saveLocal();renderKPI();cloudSave();}
+function save(){saveLocal();renderKPI();cloudSave();showToast('✓ 保存しました');}
 
 // ---- nav ----
+function activateTab(id){
+  const nav=document.getElementById('nav');
+  [...nav.children].forEach(b=>b.classList.toggle('active',b.dataset.id===id));
+  document.querySelectorAll('.wrap > section').forEach(s=>s.classList.toggle('active',s.id===id));
+  const btn=[...nav.children].find(b=>b.dataset.id===id);
+  if(btn)btn.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
+  try{localStorage.setItem('canele_tab',id);}catch(e){}
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 function buildNav(){
   const nav=document.getElementById('nav');nav.innerHTML='';
-  TABS.forEach(([id,label],i)=>{const b=document.createElement('button');b.textContent=label;if(i===0)b.className='active';
-    b.onclick=()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');
-    document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');};
-    nav.appendChild(b);});
+  TABS.forEach(([id,label])=>{const b=document.createElement('button');b.textContent=label;b.dataset.id=id;
+    b.onclick=()=>activateTab(id);nav.appendChild(b);});
+  let saved=null;try{saved=localStorage.getItem('canele_tab');}catch(e){}
+  activateTab(TABS.some(t=>t[0]===saved)?saved:TABS[0][0]);
 }
 buildNav();
+// トースト・トップへ戻る
+let _toastT;
+function showToast(m){const t=document.getElementById('toast');if(!t)return;t.textContent=m;t.classList.add('show');clearTimeout(_toastT);_toastT=setTimeout(()=>t.classList.remove('show'),1100);}
+window.addEventListener('scroll',()=>{const b=document.getElementById('toTop');if(b)b.classList.toggle('show',window.scrollY>360);});
 
 const yen=n=>'¥'+(Math.round(n)||0).toLocaleString();
 
@@ -827,6 +870,26 @@ function cloudSave(){
 
 renderAll();
 initCloud();
+
+/* ===== 合言葉ゲート（簡易アクセス制限） ===== */
+// 合言葉「baton2026」のSHA-256ハッシュ（平文は保存していません。変更可）
+const PASS_HASH='7b458e5ebb325d95f09a914e4c6b640e5c0022c75c2bed48ad3cfe73cda2dc2b';
+async function sha256hex(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+async function unlockGate(){
+  const v=document.getElementById('gate-input').value;
+  try{const h=await sha256hex(v);
+    if(h===PASS_HASH){try{sessionStorage.setItem('canele_ok','1');}catch(e){}document.getElementById('gate').classList.add('hide');}
+    else{document.getElementById('gate-err').textContent='合言葉が違います';}
+  }catch(e){document.getElementById('gate-err').textContent='この環境では判定できません';}
+}
+function checkGate(){
+  const g=document.getElementById('gate');if(!g)return;
+  // ローカルファイル（自分のPC）では合言葉不要
+  if(location.protocol==='file:'){g.classList.add('hide');return;}
+  try{if(sessionStorage.getItem('canele_ok')==='1'){g.classList.add('hide');return;}}catch(e){}
+  const gi=document.getElementById('gate-input');if(gi)setTimeout(()=>gi.focus(),100);
+}
+checkGate();
 </script>
 </body>
 </html>
