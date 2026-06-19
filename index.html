@@ -317,6 +317,22 @@
   </div>
 </section>
 
+<!-- ===== 仕入れ先 ===== -->
+<section id="suppliers">
+  <div class="card">
+    <h2>🫘 <span class="em">仕入れ先（コーヒー豆・紅茶）</span></h2>
+    <p class="lead">小ロットで仕入れやすい候補。「開く↗」で各社サイトへ。価格・最低ロットは見積もりで要確認。まず2〜3種を小ロットで試し、売れ筋を絞ってからロットを上げると原価を下げられます。</p>
+    <table>
+      <thead><tr><th style="width:9%">分類</th><th style="width:26%">仕入れ先</th><th>メモ</th><th style="width:8%">リンク</th><th style="width:5%"></th></tr></thead>
+      <tbody id="suppliers-body"></tbody>
+    </table>
+    <div class="row" style="margin-top:10px"><button class="btn sm" onclick="addSupplier()">＋ 行を追加</button></div>
+    <div class="note" style="margin-top:14px">
+      <b>コーヒー：</b>カフェラテ主体ならエスプレッソ向き深煎り＋ブラック用に中煎りも確保。<b>紅茶：</b>オペが軽いのはティーバッグ。定番＋季節（ハーブティー）で2〜3種に絞ると回しやすい。和紅茶（井村園）は抹茶オレ・グリーンソフトと世界観が合い差別化に好相性。
+    </div>
+  </div>
+</section>
+
 <!-- ===== SNS投稿 ===== -->
 <section id="sns">
   <div class="card">
@@ -414,7 +430,7 @@
 
 <script>
 const KEY='canele_baton_v1';
-const TABS=[['overview','概要'],['schedule','進行表'],['menu','メニュー価格'],['sales','売上管理'],['todo','オーナーToDo'],['prep','開業準備'],['equip','厨房機器'],['gear','機器リスト'],['sns','SNS投稿'],['strategy','SNS戦略'],['press','プレスリリース']];
+const TABS=[['overview','概要'],['schedule','進行表'],['menu','メニュー価格'],['sales','売上管理'],['todo','オーナーToDo'],['prep','開業準備'],['equip','厨房機器'],['gear','機器リスト'],['suppliers','仕入れ先'],['sns','SNS投稿'],['strategy','SNS戦略'],['press','プレスリリース']];
 
 // ---- default data ----
 const DEFAULT={
@@ -551,13 +567,25 @@ const DEFAULT={
       ['領収書・納品書・名刺・開業届控え',false],
       ['日次の売上記録運用（本アプリ売上管理表に毎日入力）',false],
     ],
-  }
+  },
+  suppliers:[
+    ['コーヒー','キーコーヒー（業務用・開業ナビ）','大手で安定供給・サポート充実。初めての仕入れに安心','https://www.keycoffee.co.jp/business/'],
+    ['コーヒー','ダート珈琲（業務用卸専門）','カフェ開業向け卸専門。小ロット相談可','https://www.dart-coffee.com/'],
+    ['コーヒー','珈琲豆 山倉（オリジナルブレンド卸）','小ロットからオリジナルブレンド焙煎。看板ブレンド向き','https://kona-snow.work/originalblend/'],
+    ['コーヒー','アフロの焙煎屋（AFRO ROASTER）','自家焙煎・小ロット卸。開業の仕入れ情報が充実','https://afroaster.com/'],
+    ['コーヒー','国分ネット卸（コーヒー）','問屋系ネット卸。小ロット・送料無料枠。コーヒーも紅茶も一括','https://netton.kokubu.jp/'],
+    ['紅茶','バシラーティー（業務用）','会費無料・初回送料無料。100袋/100gから小ロット・ギフト映え','https://www.basilurtea.jp/'],
+    ['紅茶','神戸紅茶（業務用・OEM）','オリジナルブレンド・OEM対応。店オリジナル紅茶向き','https://kobetea.co.jp/businessuse/'],
+    ['紅茶','リーフィー（LEAFY）','1kg〜送料無料。専門店価格より約40%お得','https://www.tealeafy.com/'],
+    ['紅茶','amsu tea（業務用・卸）','スリランカ直取引で適正価格。ハーブティーも揃う','https://www.amsu-tea.com/pages/business-wholesale'],
+    ['紅茶','井村園（和紅茶 B2B）','国産和紅茶。抹茶オレ/グリーンソフトと世界観が合う','https://imuraen.jp/btob'],
+  ]
 };
 
 let DATA=load();
 function migrateData(d){
   if(!d||!d.sched)return structuredClone(DEFAULT);
-  ['gear','posts','prep'].forEach(k=>{if(!d[k])d[k]=structuredClone(DEFAULT[k]);});
+  ['gear','posts','prep','suppliers'].forEach(k=>{if(!d[k])d[k]=structuredClone(DEFAULT[k]);});
   // migrate old 5-col schedule [時期,工程,タスク,期限,状態] -> [工程,タスク,開始,終了,期限,状態]
   const P=['6月前半','6月後半','7月前半','7月後半','8月初'];
   d.sched=d.sched.map(r=>{if(r.length>=6)return r;const per=P.includes(r[0])?r[0]:'6月前半';return [r[1]||'',r[2]||'',per,per,r[3]||'',r[4]||'todo'];});
@@ -733,9 +761,9 @@ function addCheck(k,g){DATA[k][g].push(k==='todo'?['新しい項目',false,'']:[
 function afterCheck(k){renderChecklist(k,k==='todo'?'todo-groups':'prep-groups');renderKPI();renderGantt();}
 
 // ---- shared ----
-function upd(t,i,j,v){DATA[t][i][j]=v;save();if(t==='sched')renderSched();if(t==='gear')renderGear();}
+function upd(t,i,j,v){DATA[t][i][j]=v;save();if(t==='sched')renderSched();if(t==='gear')renderGear();if(t==='suppliers')renderSuppliers();}
 function updn(t,i,j,v){DATA[t][i][j]=+v;save();if(t==='menu')renderMenu();if(t==='sales')renderSales();}
-function rm(t,i){DATA[t].splice(i,1);save();({sched:renderSched,menu:renderMenu,sales:renderSales,gear:renderGear,posts:renderPosts}[t])();}
+function rm(t,i){DATA[t].splice(i,1);save();({sched:renderSched,menu:renderMenu,sales:renderSales,gear:renderGear,posts:renderPosts,suppliers:renderSuppliers}[t])();}
 function renderKPI(){
   const sDone=DATA.sched.filter(r=>r[5]==='done').length,sTot=DATA.sched.length;
   let tDone=0,tTot=0,rem=0;
@@ -783,6 +811,24 @@ function renderGear(){
 }
 function addGear(){DATA.gear.push(['コーヒー','','','','','']);save();renderGear();}
 
+// ---- suppliers ----
+function renderSuppliers(){
+  const tb=document.getElementById('suppliers-body');tb.innerHTML='';
+  DATA.suppliers.forEach((r,i)=>{
+    const c=r[0]==='紅茶'?'#fbecea':'#f3e9dd';
+    const url=r[3]||('https://www.google.com/search?q='+encodeURIComponent((r[1]||'')+' 仕入れ'));
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td style="background:${c}"><input value="${esc(r[0])}" onchange="upd('suppliers',${i},0,this.value)"></td>
+      <td><input value="${esc(r[1])}" onchange="upd('suppliers',${i},1,this.value)"></td>
+      <td><input value="${esc(r[2])}" onchange="upd('suppliers',${i},2,this.value)"></td>
+      <td><a href="${url}" target="_blank" rel="noopener" class="btn ghost sm" style="text-decoration:none;display:inline-block">開く↗</a></td>
+      <td><button class="btn del sm" onclick="rm('suppliers',${i})">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function addSupplier(){DATA.suppliers.push(['コーヒー','','','']);save();renderSuppliers();}
+
 // ---- posts ----
 function renderPosts(){
   const tb=document.getElementById('posts-body');tb.innerHTML='';
@@ -807,7 +853,7 @@ function copyPost(i){const t=DATA.posts[i][2];navigator.clipboard?.writeText(t).
 
 function copyEl(id){const el=document.getElementById(id);const t=el?el.innerText:'';
   navigator.clipboard?.writeText(t).then(()=>{const b=event.target;const o=b.textContent;b.textContent='コピーしました';setTimeout(()=>b.textContent=o,1400);}).catch(()=>alert('コピーできませんでした'));}
-function renderAll(){renderSched();renderMenu();renderSales();renderChecklist('todo','todo-groups');renderChecklist('prep','prep-groups');renderGear();renderPosts();renderGantt();renderKPI();}
+function renderAll(){renderSched();renderMenu();renderSales();renderChecklist('todo','todo-groups');renderChecklist('prep','prep-groups');renderGear();renderSuppliers();renderPosts();renderGantt();renderKPI();}
 
 /* ===== オンライン同期（Supabase） ===== */
 const CFG_KEY='canele_baton_cloud';
